@@ -5,19 +5,28 @@
   "scripts": {
     "dev": "next dev --turbopack",
     "build": "next build --turbopack",
-    "start": "next start"
+    "start": "next start",
+    "backend:dev": "cd backend && npm run dev",
+    "backend:build": "cd backend && npm run build",
+    "backend:start": "cd backend && npm run start",
+    "backend:db:generate": "cd backend && npm run db:generate",
+    "backend:db:push": "cd backend && npm run db:push",
+    "backend:db:studio": "cd backend && npm run db:studio",
+    "dev:full": "concurrently \"npm run dev\" \"npm run backend:dev\"",
+    "install:all": "npm install && cd backend && npm install"
   },
   "dependencies": {
+    "next": "15.5.2",
     "react": "19.1.0",
-    "react-dom": "19.1.0",
-    "next": "15.5.2"
+    "react-dom": "19.1.0"
   },
   "devDependencies": {
-    "typescript": "^5",
+    "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
-    "@tailwindcss/postcss": "^4",
-    "tailwindcss": "^4"
+    "concurrently": "^8.2.2",
+    "tailwindcss": "^4",
+    "typescript": "^5"
   }
 }
