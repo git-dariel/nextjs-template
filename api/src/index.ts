@@ -34,7 +34,7 @@ const limiter = rateLimit({
 app.use(helmet());
 app.use(
   cors({
-    origin: process.env.FRONTEND_URL || "http://localhost:3000",
+    origin: process.env.FRONTEND_URL || "https://nextjs-template-frontend.vercel.app" || "http://localhost:3000",
     credentials: true,
   })
 );
