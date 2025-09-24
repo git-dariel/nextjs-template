@@ -1,5 +1,6 @@
 // Import database connection
 import { prisma } from "./prisma";
+import { URL } from "url";
 
 // Function to check database connection
 export async function connectDatabase() {
@@ -7,7 +8,15 @@ export async function connectDatabase() {
     // Test the database connection
     await prisma.$connect();
 
-    console.log("✅ Database connected successfully");
+    const databaseUrl = process.env.DATABASE_URL;
+
+    if (!databaseUrl) {
+      throw new Error("DATABASE_URL is not set.");
+    }
+
+    const parsedUrl = new URL(databaseUrl);
+    const hostname = parsedUrl.hostname;
+    console.log(`✅ Database connected successfully in: ${hostname}`);
     return true;
   } catch (error) {
     console.error("❌ Database connection failed:", error);

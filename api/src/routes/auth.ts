@@ -1,27 +1,16 @@
-import express from "express";
-import bcrypt from "bcryptjs";
-import jwt from "jsonwebtoken";
-import Joi from "joi";
-import { prisma } from "../lib/prisma";
+import express, { Request, Response } from "express";
+import { registerSchema, loginSchema } from "../lib/validations";
+import authService from "../services/auth";
 
 const router = express.Router();
 
-// Validation schemas
-const registerSchema = Joi.object({
-  name: Joi.string().min(2).max(50).required(),
-  email: Joi.string().email().required(),
-  password: Joi.string().min(6).required(),
-});
-
-const loginSchema = Joi.object({
-  email: Joi.string().email().required(),
-  password: Joi.string().required(),
-});
+router.post("/register", register);
+router.post("/login", login);
 
 // @route   POST /api/auth/register
 // @desc    Register a new user
 // @access  Public
-router.post("/register", async (req, res) => {
+async function register(req: Request, res: Response) {
   try {
     // Validate input
     const { error } = registerSchema.validate(req.body);
@@ -34,46 +23,21 @@ router.post("/register", async (req, res) => {
 
     const { name, email, password } = req.body;
 
-    // Check if user already exists
-    const existingUser = await prisma.user.findUnique({
-      where: { email },
-    });
+    const result = await authService.register(email, name, password);
 
-    if (existingUser) {
+    if (!result.success) {
       return res.status(400).json({
         success: false,
-        message: "User already exists",
+        message: result.message,
       });
     }
-
-    // Hash password
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(password, salt);
-
-    // Create user
-    const user = await prisma.user.create({
-      data: {
-        name,
-        email,
-        password: hashedPassword,
-      },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        createdAt: true,
-      },
-    });
-
-    // Create JWT token
-    const token = jwt.sign({ userId: user.id }, process.env.JWT_SECRET || "", { expiresIn: "7d" });
 
     res.status(201).json({
       success: true,
       message: "User created successfully",
       data: {
-        user,
-        token,
+        user: result.user,
+        token: result.token,
       },
     });
   } catch (error) {
@@ -83,12 +47,12 @@ router.post("/register", async (req, res) => {
       message: "Server error",
     });
   }
-});
+}
 
 // @route   POST /api/auth/login
 // @desc    Login user
 // @access  Public
-router.post("/login", async (req, res) => {
+async function login(req: Request, res: Response) {
   try {
     // Validate input
     const { error } = loginSchema.validate(req.body);
@@ -101,41 +65,23 @@ router.post("/login", async (req, res) => {
 
     const { email, password } = req.body;
 
-    // Check if user exists
-    const user = await prisma.user.findUnique({
-      where: { email },
-    });
+    const result = await authService.login(email, password);
 
-    if (!user) {
+    if (!result.success) {
       return res.status(400).json({
         success: false,
-        message: "Invalid credentials",
+        message: result.message,
       });
     }
 
-    // Check password
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid credentials",
-      });
-    }
-
-    // Create JWT token
-    const token = jwt.sign({ userId: user.id }, process.env.JWT_SECRET || "", { expiresIn: "7d" });
-
-    res.json({
+    res.status(200).json({
       success: true,
-      message: "Login successful",
+      message: result.message,
       data: {
         user: {
-          id: user.id,
-          name: user.name,
-          email: user.email,
-          createdAt: user.createdAt,
+          name: result.data?.user.name,
         },
-        token,
+        token: result.data?.token,
       },
     });
   } catch (error) {
@@ -145,6 +91,6 @@ router.post("/login", async (req, res) => {
       message: "Server error",
     });
   }
-});
+}
 
 export default router;
